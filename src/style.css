@@ -23,8 +23,6 @@ a:hover {
 }
 
 canvas {
-  width: 256px;
-  height: 256px;
   background-color: #ffffff;
   border: 1px solid black;
   border-radius: 8px;
@@ -34,6 +32,8 @@ canvas {
 body {
   margin: 0;
   display: flex;
+  flex-direction: column;
+  justify-content: center;
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
