@@ -71,6 +71,12 @@ h1 {
   color: #888;
 }
 
+#button-conatiner {
+  display: flex;
+  justify-content: center;
+  gap: 1em;
+}
+
 button {
   border-radius: 8px;
   border: 1px solid transparent;
