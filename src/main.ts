@@ -30,27 +30,30 @@ buttonContainer.appendChild(clearButton);
 
 const ctx = canvas.getContext("2d")!;
 
-class MarkerLine {
-    private points: { x: number; y: number }[] = [];
+interface MarkerLine {
+    points: { x: number; y: number }[];
+    drag(x: number, y: number): void;
+    display(ctx: CanvasRenderingContext2D): void;
+}
 
-    constructor(initialX: number, initialY: number) {
-        this.points.push({ x: initialX, y: initialY });
-    }
-
-    drag(x: number, y: number) {
-        this.points.push({ x, y });
-    }
-
-    display(ctx: CanvasRenderingContext2D) {
-        if (this.points.length > 1) {
-            ctx.beginPath();
-            ctx.moveTo(this.points[0].x, this.points[0].y);
-            for (let i = 1; i < this.points.length; i++) {
-                ctx.lineTo(this.points[i].x, this.points[i].y);
+function createMarkerLine(initialX: number, initialY: number): MarkerLine {
+    const line: MarkerLine = {
+        points: [{ x: initialX, y: initialY }],
+        drag(x: number, y: number) {
+            this.points.push({ x, y });
+        },
+        display(ctx: CanvasRenderingContext2D) {
+            if (this.points.length > 1) {
+                ctx.beginPath();
+                ctx.moveTo(this.points[0].x, this.points[0].y);
+                for (let i = 1; i < this.points.length; i++) {
+                    ctx.lineTo(this.points[i].x, this.points[i].y);
+                }
+                ctx.stroke();
             }
-            ctx.stroke();
-        }
-    }
+        },
+    };
+    return line;
 }
 
 const cursor = { active: false, x: 0, y: 0 };
@@ -61,7 +64,7 @@ canvas.addEventListener("mousedown", (e) => {
     cursor.active = true;
     cursor.x = e.offsetX;
     cursor.y = e.offsetY;
-    const newLine = new MarkerLine(cursor.x, cursor.y);
+    const newLine = createMarkerLine(cursor.x, cursor.y);
     lines.push(newLine);
     canvas.dispatchEvent(new Event("drawing-changed"));
 });
