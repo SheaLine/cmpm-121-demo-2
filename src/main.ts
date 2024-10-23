@@ -28,17 +28,35 @@ const clearButton = document.createElement("button");
 clearButton.innerHTML = "clear";
 buttonContainer.appendChild(clearButton);
 
+const toolContainer = document.createElement("div");
+toolContainer.id = "tool-container";
+app.appendChild(toolContainer);
+
+const thinButton = document.createElement("button");
+thinButton.innerHTML = "thin";
+toolContainer.appendChild(thinButton);
+
+const thickButton = document.createElement("button");
+thickButton.innerHTML = "thick";
+toolContainer.appendChild(thickButton);
+
 const ctx = canvas.getContext("2d")!;
 
 interface MarkerLine {
     points: { x: number; y: number }[];
+    thickness: number;
     drag(x: number, y: number): void;
     display(ctx: CanvasRenderingContext2D): void;
 }
 
-function createMarkerLine(initialX: number, initialY: number): MarkerLine {
+function createMarkerLine(
+    initialX: number,
+    initialY: number,
+    thickness: number,
+): MarkerLine {
     const line: MarkerLine = {
         points: [{ x: initialX, y: initialY }],
+        thickness,
         drag(x: number, y: number) {
             this.points.push({ x, y });
         },
@@ -49,6 +67,7 @@ function createMarkerLine(initialX: number, initialY: number): MarkerLine {
                 for (let i = 1; i < this.points.length; i++) {
                     ctx.lineTo(this.points[i].x, this.points[i].y);
                 }
+                ctx.lineWidth = this.thickness;
                 ctx.stroke();
             }
         },
@@ -59,12 +78,13 @@ function createMarkerLine(initialX: number, initialY: number): MarkerLine {
 const cursor = { active: false, x: 0, y: 0 };
 const lines: MarkerLine[] = [];
 const redoStack: MarkerLine[] = [];
+let currentThickness = 5; // Default thickness
 
 canvas.addEventListener("mousedown", (e) => {
     cursor.active = true;
     cursor.x = e.offsetX;
     cursor.y = e.offsetY;
-    const newLine = createMarkerLine(cursor.x, cursor.y);
+    const newLine = createMarkerLine(cursor.x, cursor.y, currentThickness);
     lines.push(newLine);
     canvas.dispatchEvent(new Event("drawing-changed"));
 });
@@ -109,9 +129,16 @@ redoButton.addEventListener("click", () => {
     }
 });
 
+thinButton.addEventListener("click", () => {
+    currentThickness = 5;
+});
+
+thickButton.addEventListener("click", () => {
+    currentThickness = 10;
+});
+
 canvas.addEventListener("drawing-changed", () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.lineWidth = 3;
     ctx.lineCap = "round";
     ctx.strokeStyle = "black";
 
