@@ -17,7 +17,7 @@ const buttonContainer = document.createElement("div");
 buttonContainer.id = "button-container";
 app.appendChild(buttonContainer);
 
-const buttons = ["undo", "redo", "clear"];
+const buttons = ["undo", "redo", "clear", "export"];
 buttons.forEach((btn) => {
     const button = document.createElement("button");
     button.innerHTML = btn;
@@ -54,7 +54,7 @@ let currentThickness = 5; // Default thickness
 let toolPreview: ToolPreview | null = null;
 let currentSticker: string | null = null;
 const initialStickers = ["😀", "🏀", "🌟"];
-let stickers = [...initialStickers];
+const stickers = [...initialStickers];
 
 // Helper functions
 function renderStickers() {
@@ -225,7 +225,7 @@ canvas.addEventListener("mouseup", () => {
     cursor.active = false;
 });
 
-buttonContainer.querySelector("button:nth-child(1)")!.addEventListener(
+buttonContainer.querySelector("button:nth-child(1)")!.addEventListener( // Undo
     "click",
     () => {
         if (lines.length > 0 || stickersOnCanvas.length > 0) {
@@ -245,7 +245,7 @@ buttonContainer.querySelector("button:nth-child(1)")!.addEventListener(
     },
 );
 
-buttonContainer.querySelector("button:nth-child(2)")!.addEventListener(
+buttonContainer.querySelector("button:nth-child(2)")!.addEventListener( // Redo
     "click",
     () => {
         if (redoStack.length > 0) {
@@ -262,13 +262,39 @@ buttonContainer.querySelector("button:nth-child(2)")!.addEventListener(
     },
 );
 
-buttonContainer.querySelector("button:nth-child(3)")!.addEventListener(
+buttonContainer.querySelector("button:nth-child(3)")!.addEventListener( // Clear
     "click",
     () => {
         lines.length = 0;
         redoStack.length = 0;
         stickersOnCanvas.length = 0;
         canvas.dispatchEvent(new Event("drawing-changed"));
+    },
+);
+
+buttonContainer.querySelector("button:nth-child(4)")!.addEventListener( // Export
+    "click",
+    () => {
+        const exportCanvas = document.createElement("canvas");
+        exportCanvas.width = 1024;
+        exportCanvas.height = 1024;
+        const exportCtx = exportCanvas.getContext("2d")!;
+        exportCtx.scale(4, 4);
+        exportCtx.lineCap = "round";
+        exportCtx.strokeStyle = "black";
+
+        lines.forEach((line) => {
+            line.display(exportCtx);
+        });
+
+        stickersOnCanvas.forEach((sticker) => {
+            sticker.display(exportCtx);
+        });
+        const dataUrl = exportCanvas.toDataURL();
+        const link = document.createElement("a");
+        link.href = dataUrl;
+        link.download = "image.png";
+        link.click();
     },
 );
 
