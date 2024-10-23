@@ -35,14 +35,27 @@ tools.forEach((tool) => {
     toolContainer.appendChild(button);
 });
 
+const stickerContainer = document.createElement("div");
+stickerContainer.id = "sticker-container";
+app.appendChild(stickerContainer);
+
+const stickers = ["😀", "🏀", "🌟"];
+stickers.forEach((sticker) => {
+    const button = document.createElement("button");
+    button.innerHTML = sticker;
+    stickerContainer.appendChild(button);
+});
+
 const ctx = canvas.getContext("2d")!;
 
 // Data structures and global variables
 const cursor = { active: false, x: 0, y: 0 };
 const lines: MarkerLine[] = [];
+const stickersOnCanvas: Sticker[] = [];
 const redoStack: MarkerLine[] = [];
 let currentThickness = 5; // Default thickness
 let toolPreview: ToolPreview | null = null;
+let currentSticker: string | null = null;
 
 // Interfaces & constructor functions
 interface MarkerLine {
@@ -95,11 +108,42 @@ function createToolPreview(
         y,
         thickness,
         draw(ctx: CanvasRenderingContext2D) {
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.thickness / 2, 0, Math.PI * 2);
-            ctx.lineWidth = 2;
-            ctx.strokeStyle = "red";
-            ctx.stroke();
+            if (currentSticker) {
+                ctx.globalAlpha = 0.5; // Set opacity to 50%
+                ctx.font = "30px Arial";
+                ctx.fillText(currentSticker, x, y);
+                ctx.globalAlpha = 1.0; // Reset opacity to default
+            } else {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.thickness / 2, 0, Math.PI * 2);
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = "red";
+                ctx.stroke();
+            }
+        },
+    };
+}
+
+interface Sticker {
+    x: number;
+    y: number;
+    emoji: string;
+    drag(x: number, y: number): void;
+    display(ctx: CanvasRenderingContext2D): void;
+}
+
+function createSticker(x: number, y: number, emoji: string): Sticker {
+    return {
+        x,
+        y,
+        emoji,
+        drag(newX: number, newY: number) {
+            this.x = newX;
+            this.y = newY;
+        },
+        display(ctx: CanvasRenderingContext2D) {
+            ctx.font = "30px Arial";
+            ctx.fillText(this.emoji, this.x, this.y);
         },
     };
 }
@@ -120,6 +164,10 @@ canvas.addEventListener("tool-moved", () => {
         line.display(ctx);
     });
 
+    stickersOnCanvas.forEach((sticker) => {
+        sticker.display(ctx);
+    });
+
     if (toolPreview) {
         toolPreview.draw(ctx);
     }
@@ -129,16 +177,28 @@ canvas.addEventListener("mousedown", (e) => {
     cursor.active = true;
     cursor.x = e.offsetX;
     cursor.y = e.offsetY;
-    const newLine = createMarkerLine(cursor.x, cursor.y, currentThickness);
-    lines.push(newLine);
+    if (currentSticker) {
+        const newSticker = createSticker(cursor.x, cursor.y, currentSticker);
+        stickersOnCanvas.push(newSticker);
+        currentSticker = null;
+    } else {
+        const newLine = createMarkerLine(cursor.x, cursor.y, currentThickness);
+        lines.push(newLine);
+    }
     canvas.dispatchEvent(new Event("drawing-changed"));
     canvas.dispatchEvent(new Event("tool-moved"));
 });
 
 canvas.addEventListener("mousemove", (e) => {
     if (cursor.active) {
-        const currentLine = lines[lines.length - 1];
-        currentLine.drag(e.offsetX, e.offsetY);
+        if (currentSticker) {
+            const currentStickerObj =
+                stickersOnCanvas[stickersOnCanvas.length - 1];
+            currentStickerObj.drag(e.offsetX, e.offsetY);
+        } else {
+            const currentLine = lines[lines.length - 1];
+            currentLine.drag(e.offsetX, e.offsetY);
+        }
         canvas.dispatchEvent(new Event("drawing-changed"));
         cursor.x = e.offsetX;
         cursor.y = e.offsetY;
@@ -182,6 +242,7 @@ buttonContainer.querySelector("button:nth-child(3)")!.addEventListener(
     () => {
         lines.length = 0;
         redoStack.length = 0;
+        stickersOnCanvas.length = 0;
         canvas.dispatchEvent(new Event("drawing-changed"));
     },
 );
@@ -200,6 +261,13 @@ toolContainer.querySelector("button:nth-child(2)")!.addEventListener(
     },
 );
 
+stickerContainer.querySelectorAll("button").forEach((button, index) => {
+    button.addEventListener("click", () => {
+        currentSticker = stickers[index];
+        canvas.dispatchEvent(new Event("tool-moved"));
+    });
+});
+
 canvas.addEventListener("drawing-changed", () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.lineCap = "round";
@@ -207,5 +275,9 @@ canvas.addEventListener("drawing-changed", () => {
 
     lines.forEach((line) => {
         line.display(ctx);
+    });
+
+    stickersOnCanvas.forEach((sticker) => {
+        sticker.display(ctx);
     });
 });
