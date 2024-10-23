@@ -39,12 +39,9 @@ const stickerContainer = document.createElement("div");
 stickerContainer.id = "sticker-container";
 app.appendChild(stickerContainer);
 
-const stickers = ["😀", "🏀", "🌟"];
-stickers.forEach((sticker) => {
-    const button = document.createElement("button");
-    button.innerHTML = sticker;
-    stickerContainer.appendChild(button);
-});
+const customStickerButton = document.createElement("button");
+customStickerButton.innerHTML = "Add Custom Sticker";
+app.appendChild(customStickerButton);
 
 const ctx = canvas.getContext("2d")!;
 
@@ -52,10 +49,27 @@ const ctx = canvas.getContext("2d")!;
 const cursor = { active: false, x: 0, y: 0 };
 const lines: MarkerLine[] = [];
 const stickersOnCanvas: Sticker[] = [];
-const redoStack: MarkerLine[] = [];
+const redoStack: (MarkerLine | Sticker)[] = [];
 let currentThickness = 5; // Default thickness
 let toolPreview: ToolPreview | null = null;
 let currentSticker: string | null = null;
+const initialStickers = ["😀", "🏀", "🌟"];
+let stickers = [...initialStickers];
+
+// Helper functions
+function renderStickers() {
+    stickerContainer.innerHTML = "";
+    stickers.forEach((sticker, index) => {
+        const button = document.createElement("button");
+        button.innerHTML = sticker;
+        button.addEventListener("click", () => {
+            currentSticker = stickers[index];
+            canvas.dispatchEvent(new Event("tool-moved"));
+        });
+        stickerContainer.appendChild(button);
+    });
+}
+renderStickers(); // Render initial stickers
 
 // Interfaces & constructor functions
 interface MarkerLine {
@@ -214,10 +228,17 @@ canvas.addEventListener("mouseup", () => {
 buttonContainer.querySelector("button:nth-child(1)")!.addEventListener(
     "click",
     () => {
-        if (lines.length > 0) {
-            const lastLine = lines.pop();
-            if (lastLine) {
-                redoStack.push(lastLine);
+        if (lines.length > 0 || stickersOnCanvas.length > 0) {
+            if (lines.length > 0) {
+                const lastLine = lines.pop();
+                if (lastLine) {
+                    redoStack.push(lastLine);
+                }
+            } else if (stickersOnCanvas.length > 0) {
+                const lastSticker = stickersOnCanvas.pop();
+                if (lastSticker) {
+                    redoStack.push(lastSticker);
+                }
             }
             canvas.dispatchEvent(new Event("drawing-changed"));
         }
@@ -228,9 +249,13 @@ buttonContainer.querySelector("button:nth-child(2)")!.addEventListener(
     "click",
     () => {
         if (redoStack.length > 0) {
-            const lastRedoLine = redoStack.pop();
-            if (lastRedoLine) {
-                lines.push(lastRedoLine);
+            const lastRedoItem = redoStack.pop();
+            if (lastRedoItem) {
+                if ("points" in lastRedoItem) {
+                    lines.push(lastRedoItem);
+                } else {
+                    stickersOnCanvas.push(lastRedoItem);
+                }
             }
             canvas.dispatchEvent(new Event("drawing-changed"));
         }
@@ -261,11 +286,12 @@ toolContainer.querySelector("button:nth-child(2)")!.addEventListener(
     },
 );
 
-stickerContainer.querySelectorAll("button").forEach((button, index) => {
-    button.addEventListener("click", () => {
-        currentSticker = stickers[index];
-        canvas.dispatchEvent(new Event("tool-moved"));
-    });
+customStickerButton.addEventListener("click", () => {
+    const newSticker = prompt("Enter a new sticker:", "😀");
+    if (newSticker) {
+        stickers.push(newSticker);
+        renderStickers();
+    }
 });
 
 canvas.addEventListener("drawing-changed", () => {
