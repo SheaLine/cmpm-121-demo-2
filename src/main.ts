@@ -30,22 +30,46 @@ buttonContainer.appendChild(clearButton);
 
 const ctx = canvas.getContext("2d")!;
 
+class MarkerLine {
+    private points: { x: number; y: number }[] = [];
+
+    constructor(initialX: number, initialY: number) {
+        this.points.push({ x: initialX, y: initialY });
+    }
+
+    drag(x: number, y: number) {
+        this.points.push({ x, y });
+    }
+
+    display(ctx: CanvasRenderingContext2D) {
+        if (this.points.length > 1) {
+            ctx.beginPath();
+            ctx.moveTo(this.points[0].x, this.points[0].y);
+            for (let i = 1; i < this.points.length; i++) {
+                ctx.lineTo(this.points[i].x, this.points[i].y);
+            }
+            ctx.stroke();
+        }
+    }
+}
+
 const cursor = { active: false, x: 0, y: 0 };
-const lines: { x: number; y: number }[][] = [[]];
-const redoStack: { x: number; y: number }[][] = [];
+const lines: MarkerLine[] = [];
+const redoStack: MarkerLine[] = [];
 
 canvas.addEventListener("mousedown", (e) => {
     cursor.active = true;
     cursor.x = e.offsetX;
     cursor.y = e.offsetY;
-    lines.push([{ x: cursor.x, y: cursor.y }]);
+    const newLine = new MarkerLine(cursor.x, cursor.y);
+    lines.push(newLine);
     canvas.dispatchEvent(new Event("drawing-changed"));
 });
 
 canvas.addEventListener("mousemove", (e) => {
     if (cursor.active) {
-        const newPoint = { x: e.offsetX, y: e.offsetY };
-        lines[lines.length - 1].push(newPoint);
+        const currentLine = lines[lines.length - 1];
+        currentLine.drag(e.offsetX, e.offsetY);
         canvas.dispatchEvent(new Event("drawing-changed"));
         cursor.x = e.offsetX;
         cursor.y = e.offsetY;
@@ -58,13 +82,12 @@ canvas.addEventListener("mouseup", () => {
 
 clearButton.addEventListener("click", () => {
     lines.length = 0;
-    lines.push([]);
     redoStack.length = 0;
     canvas.dispatchEvent(new Event("drawing-changed"));
 });
 
 undoButton.addEventListener("click", () => {
-    if (lines.length > 1) {
+    if (lines.length > 0) {
         const lastLine = lines.pop();
         if (lastLine) {
             redoStack.push(lastLine);
@@ -90,13 +113,6 @@ canvas.addEventListener("drawing-changed", () => {
     ctx.strokeStyle = "black";
 
     lines.forEach((line) => {
-        if (line.length > 1) {
-            ctx.beginPath();
-            ctx.moveTo(line[0].x, line[0].y);
-            for (let i = 1; i < line.length; i++) {
-                ctx.lineTo(line[i].x, line[i].y);
-            }
-            ctx.stroke();
-        }
+        line.display(ctx);
     });
 });
