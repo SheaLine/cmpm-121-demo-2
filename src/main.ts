@@ -28,7 +28,7 @@ const toolContainer = document.createElement("div");
 toolContainer.id = "tool-container";
 app.appendChild(toolContainer);
 
-const tools = ["thin", "thick"];
+const tools = ["Thin", "Thick"];
 tools.forEach((tool) => {
     const button = document.createElement("button");
     button.innerHTML = tool;
@@ -50,10 +50,10 @@ const cursor = { active: false, x: 0, y: 0 };
 const lines: MarkerLine[] = [];
 const stickersOnCanvas: Sticker[] = [];
 const redoStack: (MarkerLine | Sticker)[] = [];
-let currentThickness = 5; // Default thickness
+let currentThickness = 3; // Default thickness
 let toolPreview: ToolPreview | null = null;
 let currentSticker: string | null = null;
-const initialStickers = ["😀", "🏀", "🌟"];
+const initialStickers = ["🏈", "🏀", "⚾"];
 const stickers = [...initialStickers];
 
 // Helper functions
@@ -124,7 +124,7 @@ function createToolPreview(
         draw(ctx: CanvasRenderingContext2D) {
             if (currentSticker) {
                 ctx.globalAlpha = 0.5; // Set opacity to 50%
-                ctx.font = "30px Arial";
+                ctx.font = "24px Arial"; // Adjusted size
                 ctx.fillText(currentSticker, x, y);
                 ctx.globalAlpha = 1.0; // Reset opacity to default
             } else {
@@ -156,7 +156,7 @@ function createSticker(x: number, y: number, emoji: string): Sticker {
             this.y = newY;
         },
         display(ctx: CanvasRenderingContext2D) {
-            ctx.font = "30px Arial";
+            ctx.font = "24px Arial"; // Adjusted size
             ctx.fillText(this.emoji, this.x, this.y);
         },
     };
@@ -301,14 +301,14 @@ buttonContainer.querySelector("button:nth-child(4)")!.addEventListener( // Expor
 toolContainer.querySelector("button:nth-child(1)")!.addEventListener(
     "click",
     () => {
-        currentThickness = 5;
+        currentThickness = 3; // Adjusted thickness
     },
 );
 
 toolContainer.querySelector("button:nth-child(2)")!.addEventListener(
     "click",
     () => {
-        currentThickness = 10;
+        currentThickness = 8; // Adjusted thickness
     },
 );
 
