@@ -43,6 +43,23 @@ const customStickerButton = document.createElement("button");
 customStickerButton.innerHTML = "Add Custom Sticker";
 app.appendChild(customStickerButton);
 
+const colorPickerContainer = document.createElement("div");
+colorPickerContainer.style.display = "flex";
+colorPickerContainer.style.justifyContent = "center";
+colorPickerContainer.style.marginTop = "10px";
+
+const colorLabel = document.createElement("span");
+colorLabel.textContent = "Color: ";
+colorLabel.style.marginRight = "5px";
+
+const colorPicker = document.createElement("input");
+colorPicker.type = "color";
+colorPicker.value = "#000000"; // Default color is black
+
+colorPickerContainer.appendChild(colorLabel);
+colorPickerContainer.appendChild(colorPicker);
+app.appendChild(colorPickerContainer);
+
 const ctx = canvas.getContext("2d")!;
 
 // Data structures and global variables
@@ -51,6 +68,7 @@ const lines: MarkerLine[] = [];
 const stickersOnCanvas: Sticker[] = [];
 const redoStack: (MarkerLine | Sticker)[] = [];
 let currentThickness = 3; // Default thickness
+let currentColor = colorPicker.value; // Default color
 let toolPreview: ToolPreview | null = null;
 let currentSticker: string | null = null;
 const initialStickers = ["🏈", "🏀", "⚾"];
@@ -75,6 +93,7 @@ renderStickers(); // Render initial stickers
 interface MarkerLine {
     points: { x: number; y: number }[];
     thickness: number;
+    color: string;
     drag(x: number, y: number): void;
     display(ctx: CanvasRenderingContext2D): void;
 }
@@ -83,10 +102,12 @@ function createMarkerLine(
     initialX: number,
     initialY: number,
     thickness: number,
+    color: string,
 ): MarkerLine {
     return {
         points: [{ x: initialX, y: initialY }],
         thickness,
+        color,
         drag(x: number, y: number) {
             this.points.push({ x, y });
         },
@@ -98,6 +119,7 @@ function createMarkerLine(
                     ctx.lineTo(this.points[i].x, this.points[i].y);
                 }
                 ctx.lineWidth = this.thickness;
+                ctx.strokeStyle = this.color;
                 ctx.stroke();
             }
         },
@@ -131,7 +153,7 @@ function createToolPreview(
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.thickness / 2, 0, Math.PI * 2);
                 ctx.lineWidth = 2;
-                ctx.strokeStyle = "red";
+                ctx.strokeStyle = currentColor;
                 ctx.stroke();
             }
         },
@@ -172,7 +194,6 @@ canvas.addEventListener("mouseout", () => {
 canvas.addEventListener("tool-moved", () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.lineCap = "round";
-    ctx.strokeStyle = "black";
 
     lines.forEach((line) => {
         line.display(ctx);
@@ -196,7 +217,12 @@ canvas.addEventListener("mousedown", (e) => {
         stickersOnCanvas.push(newSticker);
         currentSticker = null;
     } else {
-        const newLine = createMarkerLine(cursor.x, cursor.y, currentThickness);
+        const newLine = createMarkerLine(
+            cursor.x,
+            cursor.y,
+            currentThickness,
+            currentColor,
+        );
         lines.push(newLine);
     }
     canvas.dispatchEvent(new Event("drawing-changed"));
@@ -281,7 +307,6 @@ buttonContainer.querySelector("button:nth-child(4)")!.addEventListener( // Expor
         const exportCtx = exportCanvas.getContext("2d")!;
         exportCtx.scale(4, 4);
         exportCtx.lineCap = "round";
-        exportCtx.strokeStyle = "black";
 
         lines.forEach((line) => {
             line.display(exportCtx);
@@ -320,10 +345,13 @@ customStickerButton.addEventListener("click", () => {
     }
 });
 
+colorPicker.addEventListener("input", (e) => {
+    currentColor = (e.target as HTMLInputElement).value;
+});
+
 canvas.addEventListener("drawing-changed", () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.lineCap = "round";
-    ctx.strokeStyle = "black";
 
     lines.forEach((line) => {
         line.display(ctx);

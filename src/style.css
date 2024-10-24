@@ -95,6 +95,12 @@ h1 {
   gap: 10px;
 }
 
+#color-picker-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+
 button {
   border-radius: 8px;
   border: 1px solid transparent;
